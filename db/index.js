@@ -1,5 +1,6 @@
 const Sequelize = require('sequelize');
-const { STRING, TEXT, VIRTUAL } = Sequelize; 
+const { STRING, TEXT, ARRAY } = Sequelize; 
+const VIRTUAL = Sequelize.VIRTUAL;
 const conn = new Sequelize('postgres://localhost/acme_db');
 
 const User = conn.define('user', {
@@ -15,8 +16,32 @@ const User = conn.define('user', {
     get: function(){
       return this.name.slice(0, 2);
     }
+  },
+  adjectives: {
+    type: ARRAY(STRING),
+    defaultValue: []
   }
 });
+
+User.byLetter = function(letter){
+  return this.findAll({
+    where: {
+      name: {
+        [Sequelize.Op.like]: `${letter}%`
+      }
+    }
+  });
+}
+
+User.prototype.findSimilar = function(){
+  return User.findAll({
+    where: {
+      adjectives: {
+        [Sequelize.Op.overlap]: this.adjectives 
+      }
+    }
+  });
+}
 
 User.beforeSave( user => {
   user.bio = `Bio for ${user.name}`;
@@ -34,11 +59,14 @@ Thing.belongsTo(User);
 User.hasMany(Thing);
 
 const syncAndSeed = async()=> {
+  if(process.env.NOSYNC === 'true'){
+    return;
+  }
   await conn.sync({ force: true });
   const [ moe, lucy, larry ] = await Promise.all([
-    User.create({ name: 'moe' }),
-    User.create({ name: 'lucy' }),
-    User.create({ name: 'larry' }),
+    User.create({ name: 'moe', adjectives: ['smart', 'short'] }),
+    User.create({ name: 'lucy', adjectives: ['tall', 'smart']  }),
+    User.create({ name: 'larry', adjectives: ['short'] }),
   ]);
   const [ foo, bar, bazz, quq ] = await Promise.all([
     Thing.create({ name: 'foo', userId: moe.id }),

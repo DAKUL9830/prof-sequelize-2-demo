@@ -42,6 +42,16 @@ router.post('/', async(req, res, next)=> {
   }
 });
 
+
+router.get('/byLetter/:letter', async(req, res, next)=> {
+  try {
+    res.send(await User.byLetter(req.params.letter));
+  }
+  catch(ex){
+    next(ex);
+  }
+});
+
 router.get('/add', (req, res, next)=> {
   res.send(`
     <html>
@@ -56,13 +66,29 @@ router.get('/add', (req, res, next)=> {
   `);
 });
 
+router.delete('/:id', async(req, res, next)=> {
+  try {
+    const user = await User.findByPk(req.params.id);
+    await user.destroy();
+    res.redirect('/users');
+  }
+  catch(ex){
+    next(ex);
+  }
+});
+
 router.get('/:id', async(req, res, next)=> {
   try {
     const user = await User.findByPk(req.params.id, { include: [ Thing ]});
+    const similar = await user.findSimilar();
     res.send(`
       <html>
         <body>
           <a href='/users'>All Users</a>
+          <br />
+          <form method='POST' action='/users/${user.id}?_method=DELETE'>
+            <button>Delete ${ user.name }</button>
+          </form>
           <h1>${ user.name }</h1>
           <p>${ user.bio }</p>
           <ul>
@@ -72,6 +98,16 @@ router.get('/:id', async(req, res, next)=> {
                   <li>
                     ${ thing.name }
                   </li>
+                `;
+              }).join('')
+            }
+          </ul>
+          <h2>Similar Users</h2>
+          <ul>
+            ${
+              similar.map(user => {
+                return `
+                  <li>${ user.name }</li>
                 `;
               }).join('')
             }
