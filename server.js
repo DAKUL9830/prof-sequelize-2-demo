@@ -11,6 +11,7 @@ app.get('/', (req, res, next)=> res.redirect('/users'));
 
 
 app.use('/users', require('./routes/users'));
+app.use('/things', require('./routes/things'));
 
 app.use((req, res, next)=> {
   const error = Error(`Page not found (${ req.url }) for method ${req.method}!!`);

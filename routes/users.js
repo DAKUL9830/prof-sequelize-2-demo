@@ -10,6 +10,7 @@ router.get('/', async(req, res, next)=> {
       <html>
         <body>
           <a href='/users/add'>Add A User</a>
+          <a href='/things/add'>Add A Thing</a>
           <ul>
             ${
               users.map(user => {
